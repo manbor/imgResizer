@@ -14,8 +14,8 @@ string reduDirStr = Path.Combine(currentDirectory, @"reduced");
 string tmpDir = Path.Combine(currentDirectory, @"tmp");
 
 
-int maxSiteMB = (int)Math.Round(0.95 * 25);
-int maxSizeByte = maxSiteMB * 1024 * 1024;
+int maxSizeMB = (int)Math.Round(0.95 * 25);
+int maxSizeByte = maxSizeMB * 1024 * 1024;
 
 string[] admitedExtensions = {"jpeg","jpg","bmp", "heic"};
 
@@ -30,7 +30,7 @@ static long GetFileSize(Image image)
 }
 
 const int spaces = 5;
-const string tsFormat = "yyyyMMdd-HHmmss";
+const string tsFormat = "yyyyMMdd.HHmmss";
 const string targetExtensions = "jpeg";
 
 for (int i=0; i<admitedExtensions.Count(); i++) {
@@ -77,11 +77,11 @@ foreach (string filePath in files)
     //--------------------------------------------------------------------
     var imgPath = Path.Combine(tmpDir, Path.GetFileName(filePath));
 
-    File.Copy(filePath, tmpDir, true); // Set the third parameter to 'true' to overwrite if the file already exists
+    File.Copy(filePath, imgPath, true); // Set the third parameter to 'true' to overwrite if the file already exists
 
     FileInfo fileInfo = new FileInfo(imgPath);
     var sizeMB = fileInfo.Length / 1024 / 1024;
-    Console.WriteLine($"{imgPath.PadRight(150)} {sizeMB} MB");
+    Console.WriteLine($"{imgPath} - {sizeMB} MB");
 
     //--------------------------------------------------------------------
     //converting to jpeg
@@ -168,7 +168,6 @@ foreach (string filePath in files)
     {
         destinationFilePath = Path.Combine(reduDirStr, Path.GetFileName(imgPath));
         File.Copy(imgPath, destinationFilePath, true); // Set the third parameter to 'true' to overwrite if the file already exists
-        Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} image copied to {destinationFilePath}");
     }
     catch (Exception ex)
     {
@@ -184,4 +183,10 @@ foreach (string filePath in files)
         File.Delete(file);
         Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} {file} deleted");
     }
+
+    //end
+    Console.WriteLine("");
+    Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} image copied to {destinationFilePath}");
+    Console.WriteLine("");
+
 }
