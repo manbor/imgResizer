@@ -195,3 +195,6 @@ foreach (string filePath in files)
     Console.WriteLine("");
 
 }
+
+Console.WriteLine("press any key to exit...");
+Console.ReadKey();
