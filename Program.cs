@@ -14,7 +14,7 @@ string reduDirStr = Path.Combine(currentDirectory, @"reduced");
 int maxSiteMB = (int)Math.Round(0.95 * 25);
 int maxSizeByte = maxSiteMB * 1024 * 1024;
 
-string[] admitedExtensions = {"jpeg","jpg","bmp" };
+string[] admitedExtensions = {"jpeg","jpg","bmp", "heic"};
 
 //-----------------------------------------------------------------------------------------------------------
 static long GetFileSize(Image image)
