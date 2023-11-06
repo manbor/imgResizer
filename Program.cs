@@ -13,9 +13,8 @@ string origDirStr = Path.Combine(currentDirectory, @"original");
 string reduDirStr = Path.Combine(currentDirectory, @"reduced");
 string tmpDir = Path.Combine(currentDirectory, @"tmp");
 
+int maxPixels = (int) (24 * 1000000); // 25.4 MP (1 MP = 1,000,000 pixel)
 
-int maxSizeMB = (int)Math.Round(0.95 * 25);
-int maxSizeByte = maxSizeMB * 1024 * 1024;
 
 string[] admitedExtensions = {"jpeg","jpg","bmp", "heic"};
 
@@ -105,9 +104,9 @@ foreach (string filePath in files)
         }
         catch (Exception ex)
         {
-            Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)}  [convert] -----------------------------------------------");
+            Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [convert] -----------------------------------------------");
             Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [convert] {ex.Message}");
-            Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)}  [convert] -----------------------------------------------");
+            Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [convert] -----------------------------------------------");
             continue;
         }
 
@@ -116,37 +115,29 @@ foreach (string filePath in files)
 
     //--------------------------------------------------------------------
     // reduction
-    if (fileInfo.Length > maxSizeByte)
+
+    try
     {
-        try
+        using (var image = Image.Load(imgPath))
         {
-            int tryCount = 0;
+            double pixels = (double)(image.Width * image.Height);
+            Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] actual: { (int) Math.Round(pixels/1_000_000) } MP");
 
-            using (var image = Image.Load(imgPath))
+
+            if (pixels > maxPixels)
             {
+                    Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] start ( {(int) (pixels/1_000_000)} MP -> {(int) (maxPixels/1_000_000)} MP ) ...");
+                    double aspectRatio = (double)image.Width / image.Height;
 
-                Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] start ( ${sizeMB}MB > {maxSizeMB}MB ) ...");
+                    int newWidth = (int)Math.Sqrt(maxPixels * aspectRatio);
+                    int newHeight = (int)(newWidth / aspectRatio);
 
-                var redPercent = 0.2d;
+                    image.Mutate(x => x.Resize(new ResizeOptions
+                    {
+                        Size = new Size(newWidth, newHeight),
+                        Mode = ResizeMode.Max
+                    }));
 
-                // reduce image quality until reach target size
-                while (GetFileSize(image) > maxSizeByte)
-                {
-                    int newWidth = (int)Math.Round(image.Width / (1 + redPercent));
-                    int newHeight = (int)Math.Round(image.Height / (1 + redPercent));
-                    tryCount++;
-
-                    Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] try {tryCount.ToString().PadLeft(3, '0')} : width: ${newHeight}, height: {newHeight}");
-
-                    image.Mutate(x => x
-                        .Resize(new ResizeOptions
-                        {
-                            Size = new Size(newWidth, newHeight),
-                            Mode = ResizeMode.Max
-                        })
-                        );
-
-                }
                 Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] finished");
 
                 imgPath = Path.Combine(tmpDir, $"{fileNameWithoutExtension}_reduced.{targetExtensions}");
@@ -155,18 +146,21 @@ foreach (string filePath in files)
 
                 filesToDelete.Add(imgPath);
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] -----------------------------------------------");
-            Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] {ex.Message}");
-            Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] -----------------------------------------------");
-            continue;
+            else
+            {
+                Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] nothing to do");
+            }
+
         }
     }
-    else {
-        Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] nothing to do");
+    catch (Exception ex)
+    {
+        Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] -----------------------------------------------");
+        Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] {ex.Message}");
+        Console.WriteLine(" ".PadLeft(spaces) + $"{DateTime.Now.ToString(tsFormat)} [reduce] -----------------------------------------------");
+        continue;
     }
+
 
     //--------------------------------------------------------------------
     // copy to target folder
